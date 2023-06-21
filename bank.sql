@@ -3,15 +3,16 @@ create database customers_db;
 use customers_db;
 create table customers_table(
 	customer_id int PRIMARY KEY auto_increment,
-    customer_name varchar(16) not null,
-    customer_cash int default 0
+    	customer_name varchar(16) not null,
+    	customer_cash int default 0,
+	customer_password varchar(20) default "password"
 );
-insert into customers_table value
-	(1, "Mark Robert", 1000000),
-    (2, "Zack Chi", 205500),
-    (3, "admin", 999999);
+insert into customers_table(customer_name, customer_cash) value
+	("mark robert", 1000000),
+    ("zack chi", 205500),
+    ("admin", 999999);
+
+update customers_table
+set customer_password = concat("password", customer_id);
 select * from customers_table;
-commit;
-alter table customers_table
-add column password varchar(16) default "password";
 commit;
