@@ -12,3 +12,6 @@ insert into customers_table value
     (3, "admin", 999999);
 select * from customers_table;
 commit;
+alter table customers_table
+add column password varchar(16) default "password";
+commit;
