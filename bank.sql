@@ -2,7 +2,7 @@ set autocommit = 0;
 create database customers_db;
 use customers_db;
 create table customers_table(
-	customer_id int unique,
+	customer_id int PRIMARY_KEY,
     customer_name varchar(16) not null,
     customer_cash int default 0
 );
