@@ -166,7 +166,10 @@ class accountManagment:
 
 
 class atm():
-    def __init__(self, customer_id) -> None:
+    def __init__(self, current_customer_id) -> None:
+        def getCustomerNameById(cursor, current_customer_id):
+            cursor.execute(f'select customer_name from customers_table where customer_id = {current_customer_id};')
+            return cursor.fetchone()[0]
         def deposit(cursor) -> None:
             '''
         'Deposit command to update CASH at customer_id.\n
@@ -174,12 +177,16 @@ class atm():
         takes 0 args, only asks inside of function.
         '''
             try:
-                cash = abs(int(input('How much do you want to deposit (input integer)?: ')))
+                cash = int(input('How much do you want to deposit (input integer)?: '))
+                if cash < 0:
+                    print("You cant take debt here!")
+                    cash = str(cash)
+                    cash = "nope"
             except:
                 print("Deposit Only integers and positive numbers, ATM can not hold cents")
 
-            cursor.execute(f'update customers_table set customer_cash = customer_cash + {cash} where customer_id = "{customer_id}";')
-            printCashAmount(customer_id, cursor)
+            cursor.execute(f'update customers_table set customer_cash = customer_cash + {cash} where customer_id = "{current_customer_id}";')
+            printCashAmountById(current_customer_id, cursor)
 
 
         def withdraw(cursor) -> None:
@@ -188,13 +195,22 @@ class atm():
         Cash -= cash_input for user.\n
         takes 0 args, only asks inside of function.
         '''
+            try: #check how much money customer have
+                cursor.execute(f'select customer_cash from customers_table where customer_id = {current_customer_id};')
+                result = cursor.fetchone()
+            except: pass
+
             try:
-                cash = abs(int(input('How much do you want to withdraw (input integer)?: ')))
+                cash = int(input('How much do you want to withdraw (input integer)?: '))
+                if cash < 0 or int(result[0]) - cash < 0:
+                    print("You cant take debt here!")
+                    cash = str(cash)
+                    cash = "nope"
             except:
                 print("Withdraw Only integers and positive numbers, ATM can not hold cents")
 
-            cursor.execute(f'update customers_table set customer_cash = customer_cash - {cash} where customer_id = "{customer_id}";')
-            printCashAmount(customer_id, cursor)
+            cursor.execute(f'update customers_table set customer_cash = customer_cash - {cash} where customer_id = "{current_customer_id}";')
+            printCashAmountById(current_customer_id, cursor)
 
 
         def send(cursor) -> None:
@@ -203,39 +219,49 @@ class atm():
         Sends cash from one user to another.\n
         takes 0 args, only asks inside of function.
         '''
+            cursor.execute('select customer_name from customers_table;')
+            
+            for i, name in enumerate(cursor.fetchall(), start=1):
+                print(f"{i}) {name}")
+            try:
+                taker_id = int(input('Send money to who? (taker id): '))
+            except: pass
 
-            taker = input('Send money to who? (taker name): ').lower()
+            try: #check how much money customer do have
+                cursor.execute(f'select customer_cash from customers_table where customer_id = {current_customer_id};')
+                cash_on_sender_card = cursor.fetchone()
+            except: pass
 
             try:
-                cash = abs(int(input('How much do you want to withdraw (input integer)?: ')))
+                cash_to_send = int(input('How much do you want to withdraw (input integer)?: '))
+                if cash_to_send < 0 or int(cash_on_sender_card[0]) - cash_to_send < 0:
+                    print("You cant take debt here!")
+                    cash_to_send = str(cash_to_send)
+                    cash_to_send = "nope"
             except:
                 print("Only integers and positive numbers, ATM can not hold cents")
 
-            a = f'update customers_table set customer_cash = customer_cash - {cash} where customer_id = "{customer_id}";'
-            b = f'update customers_table set customer_cash = customer_cash + {cash} where customer_name = "{taker}";'
-
-            securityCheck(taker)
+            a = f'update customers_table set customer_cash = customer_cash - {cash_to_send} where customer_id = "{current_customer_id}";'
+            b = f'update customers_table set customer_cash = customer_cash + {cash_to_send} where customer_id = "{taker_id}";'
 
             cursor.execute(a)
             cursor.execute(b)
 
-            printCashAmount(customer_id, cursor)
-            #printCashAmount for customer_name
-            cursor.execute(f'select customer_cash from customers_table where customer_name = "{taker}";')
-            result = cursor.fetchone()
-            print(f"{taker.title()}'s cash is now {result[0]}")
+            printCashAmountById(current_customer_id, cursor)
+            printCashAmountById(taker_id, cursor)
 
 
-        def printCashAmount(customer_id, cursor) -> None:
+        def printCashAmountById(current_customer_id, cursor) -> None:
             '''
         Select command to print in terminal\n
         Print in terminal amount of money of customer_id \n
         Takes 1 positional arg: customer_id e.g. "1"
         '''
-            cursor.execute(f'select customer_cash from customers_table where customer_id = "{customer_id}";')
+            cursor.execute(f'select customer_cash from customers_table where customer_id = "{current_customer_id}";')
 
             result = cursor.fetchone()
-            print(f"#{customer_id}'s cash is now {result[0]}")
+            print(f"#{current_customer_id}'s cash is now {result[0]}")
+            
 
 
         def main() -> None:
@@ -246,7 +272,7 @@ class atm():
                 while True:
                     try:
                         cursor = db.cursor()
-                        match int(input(f'\n\n\n\n\n===ATM===\nHello, #{customer_id}\n1) Deposit\n2) Withdraw\n3) Send cash\n4) Exit\n')):
+                        match int(input(f'\n\n\n\n\n===ATM===\nHello, {getCustomerNameById(cursor, current_customer_id)}\n1) Deposit\n2) Withdraw\n3) Send cash\n4) Exit\n')):
                             case 1: deposit(cursor); input("Press ENTER")
                             case 2: withdraw(cursor); input("Press ENTER")
                             case 3: send(cursor); input("Press ENTER")
